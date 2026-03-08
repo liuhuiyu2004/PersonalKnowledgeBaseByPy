@@ -1,0 +1,245 @@
+/* 全局样式
+ * @author LiuHuiYu
+ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f5f7fa;
+}
+
+#app {
+    min-height: 100vh;
+}
+
+/* 头部样式 */
+.el-header {
+    background-color: #545c64;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.el-header h1 {
+    font-size: 24px;
+    margin-right: 20px;
+}
+
+.el-menu {
+    flex: 1;
+}
+
+/* 主体内容 */
+.el-main {
+    padding: 20px;
+    min-height: calc(100vh - 120px);
+}
+
+/* 卡片样式 */
+.knowledge-card {
+    margin-bottom: 20px;
+    transition: all 0.3s;
+}
+
+.knowledge-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #303133;
+}
+
+.card-meta {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 10px;
+}
+
+/* 标签样式 */
+.tag-item {
+    margin-right: 5px;
+}
+
+/* 编辑器样式 */
+.editor-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-item-label {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* 搜索框样式 */
+.search-box {
+    margin-bottom: 20px;
+}
+
+/* 统计卡片 */
+.stat-card {
+    text-align: center;
+    padding: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.stat-number {
+    font-size: 48px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.stat-label {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* 页脚 */
+.el-footer {
+    background-color: #545c64;
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .el-header {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .el-header h1 {
+        margin-bottom: 10px;
+    }
+    
+    .el-menu {
+        width: 100%;
+    }
+}
+
+/* 加载动画 */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #909399;
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 20px;
+    display: block;
+}
+
+/* 操作按钮组 */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+/* 内容预览 */
+.content-preview {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f5f7fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 10px 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 知识图谱样式 */
+.knowledge-graph {
+    min-height: calc(100vh - 200px);
+}
+
+.knowledge-graph .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.knowledge-graph .controls {
+    display: flex;
+    gap: 10px;
+}
+
+.knowledge-graph .chart-container {
+    width: 100%;
+    height: 600px;
+}
+
+.knowledge-graph .legend {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f5f7fa;
+    border-radius: 4px;
+}
+
+.knowledge-graph .legend h4 {
+    margin-bottom: 10px;
+    color: #303133;
+}
+
+.knowledge-graph .legend-items {
+    display: flex;
+    gap: 20px;
+}
+
+.knowledge-graph .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.knowledge-graph .legend-icon {
+    font-size: 16px;
+}
+
+.knowledge-graph .legend-line {
+    width: 30px;
+    height: 2px;
+    background: #606266;
+}
+
+/* 图谱节点样式优化 */
+.knowledge-graph .node-knowledge {
+    fill: #409EFF;
+}
+
+.knowledge-graph .node-tag {
+    fill: #67C23A;
+}

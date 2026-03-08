@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="LiuHuiYu">
+    <title>个人知识库</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Element Plus -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    <!-- Axios -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 导航栏 -->
+        <el-container>
+            <el-header>
+                <h1>📚 个人知识库</h1>
+                <el-menu mode="horizontal" :ellipsis="false" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
+                    <el-menu-item index="1" @click="currentView = 'list'">知识列表</el-menu-item>
+                    <el-menu-item index="2" @click="currentView = 'create'">新建知识</el-menu-item>
+                    <el-menu-item index="3" @click="currentView = 'search'">搜索</el-menu-item>
+                    <el-menu-item index="4" @click="currentView = 'web'">网络采集</el-menu-item>
+                    <el-menu-item index="5" @click="currentView = 'tags'">标签管理</el-menu-item>
+                    <el-menu-item index="6" @click="currentView = 'graph'">知识图谱</el-menu-item>
+                    <el-menu-item index="7" @click="currentView = 'stats'">统计</el-menu-item>
+                </el-menu>
+            </el-header>
+            
+            <el-main>
+                <!-- 知识列表视图 -->
+                <knowledge-list ref="knowledgeList" v-if="currentView === 'list'" @view="viewKnowledge" @edit="editKnowledge" @delete="deleteKnowledge"></knowledge-list>
+                
+                <!-- 创建/编辑知识视图 -->
+                <knowledge-editor v-if="currentView === 'create'" :edit-data="editData" @saved="saveSuccess" @cancel="cancelEdit"></knowledge-editor>
+                
+                <!-- 搜索视图 -->
+                <search-view ref="searchView" v-if="currentView === 'search'" @view="viewKnowledge" @edit="editKnowledge"></search-view>
+                
+                <!-- 网络采集视图 -->
+                <web-crawler v-if="currentView === 'web'" @saved="saveSuccess"></web-crawler>
+                
+                <!-- 标签管理视图 -->
+                <tag-manager v-if="currentView === 'tags'"></tag-manager>
+                
+                <!-- 知识图谱视图 -->
+                <knowledge-graph v-if="currentView === 'graph'" @view-knowledge="viewKnowledgeById" @filter-by-tag="filterByTag"></knowledge-graph>
+                
+                <!-- 统计视图 -->
+                <statistics v-if="currentView === 'stats'"></statistics>
+            </el-main>
+            
+            <el-footer>
+                <p>Personal Knowledge Base © 2026</p>
+            </el-footer>
+        </el-container>
+    </div>
+    
+    <script src="/static/js/components/knowledge-list.js"></script>
+    <script src="/static/js/components/knowledge-editor.js"></script>
+    <script src="/static/js/components/search-view.js"></script>
+    <script src="/static/js/components/web-crawler.js"></script>
+    <script src="/static/js/components/knowledge-graph.js"></script>
+    <script src="/static/js/components/tag-manager.js"></script>
+    <script src="/static/js/components/statistics.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
