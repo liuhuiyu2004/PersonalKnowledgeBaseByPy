@@ -23,7 +23,13 @@ const KnowledgeList = {
                             </div>
                         </template>
                         
-                        <div class="content-preview">{{ truncateContent(item.content) }}</div>
+                        <!-- 优先显示摘要，没有摘要则显示内容预览 -->
+                        <div class="content-preview">
+                            <div v-if="item.summary" style="color: #606266; line-height: 1.8;">
+                                <i style="color: #909399;">📝</i> {{ item.summary }}
+                            </div>
+                            <div v-else>{{ truncateContent(item.content) }}</div>
+                        </div>
                         
                         <div v-if="item.tags && item.tags.length > 0" style="margin: 10px 0;">
                             <el-tag 
