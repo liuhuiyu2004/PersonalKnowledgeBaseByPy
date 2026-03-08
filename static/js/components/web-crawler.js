@@ -42,6 +42,20 @@ const WebCrawler = {
                                 ></el-input>
                             </el-form-item>
                             
+                            <el-form-item label="搜索引擎">
+                                <el-select v-model="searchForm.engine" placeholder="选择搜索引擎" style="width: 100%;">
+                                    <el-option
+                                        v-for="item in searchEngines"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value"
+                                    >
+                                        <span style="float: left">{{ item.label }}</span>
+                                        <span style="float: right; color: #8492a6; font-size: 13px">{{ item.desc }}</span>
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            
                             <el-form-item label="结果数量">
                                 <el-input-number v-model="searchForm.num_results" :min="1" :max="10" />
                             </el-form-item>
@@ -108,9 +122,22 @@ const WebCrawler = {
             },
             searchForm: {
                 query: '',
+                engine: 'duckduckgo', // 默认使用 DuckDuckGo
                 num_results: 5,
                 auto_save: false
             },
+            searchEngines: [
+                {
+                    value: 'duckduckgo',
+                    label: 'DuckDuckGo',
+                    desc: '隐私保护'
+                },
+                {
+                    value: 'bing',
+                    label: 'Bing 必应',
+                    desc: '中文友好'
+                }
+            ],
             fetching: false,
             searching: false,
             fetchResult: null,

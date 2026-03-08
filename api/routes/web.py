@@ -71,6 +71,7 @@ async def search_web(
     
     - **query**: 搜索关键词
     - **num_results**: 结果数量
+    - **engine**: 搜索引擎（duckduckgo 或 bing）
     - **auto_save**: 是否自动保存结果到知识库
     """
     searcher = WebSearcher()
@@ -79,7 +80,7 @@ async def search_web(
     results = await searcher.search(
         query=request.query,
         num_results=request.num_results,
-        engine='duckduckgo'
+        engine=request.engine or 'duckduckgo'  # 使用前端传递的 engine 参数
     )
     
     # 如果启用自动保存，保存前几个结果

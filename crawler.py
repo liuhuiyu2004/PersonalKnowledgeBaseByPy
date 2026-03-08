@@ -156,7 +156,7 @@ class WebSearcher:
             # DuckDuckGo HTML 搜索
             url = f"https://html.duckduckgo.com/html/?q={query}"
             
-            async with httpx.AsyncClient(headers=self.headers, timeout=10) as client:
+            async with httpx.AsyncClient(headers=self.headers, timeout=10, follow_redirects=True) as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 
@@ -196,7 +196,7 @@ class WebSearcher:
         try:
             url = f"https://www.bing.com/search?q={query}"
             
-            async with httpx.AsyncClient(headers=self.headers, timeout=10) as client:
+            async with httpx.AsyncClient(headers=self.headers, timeout=10, follow_redirects=True) as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 

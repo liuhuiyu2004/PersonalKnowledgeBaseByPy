@@ -94,6 +94,7 @@ class WebSearchRequest(BaseModel):
     """网络搜索请求模型"""
     query: str = Field(..., min_length=1, max_length=500, description="搜索关键词")
     num_results: Optional[int] = Field(default=5, ge=1, le=20, description="结果数量")
+    engine: Optional[str] = Field(default='duckduckgo', description="搜索引擎：duckduckgo 或 bing")
     auto_save: Optional[bool] = Field(default=False, description="是否自动保存结果到知识库")
 
 
