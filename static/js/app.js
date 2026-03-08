@@ -100,21 +100,44 @@ const app = createApp({
                     
             const { h } = Vue;
                     
-            // 使用 ElementPlus 的 MessageBox 和 Dialog 组合
+            // 创建内容区域 - 使用 innerHTML 渲染富文本
+            const contentVNode = h('div', {
+                style: {
+                    'line-height': '1.8',
+                    'max-height': '60vh',
+                    'overflow-y': 'auto',
+                    'margin-top': '15px'
+                },
+                innerHTML: knowledge.content
+            });
+                    
+            // 创建头部信息（标签和日期）
+            const headerVNode = h('div', {
+                style: {
+                    'margin-bottom': '15px',
+                    'padding-bottom': '10px',
+                    'border-bottom': '1px solid #e4e7ed'
+                }
+            }, [
+                h('el-tag', {
+                    type: this.getSourceTypeTag(knowledge.source_type),
+                    size: 'small'
+                }, this.getSourceTypeText(knowledge.source_type)),
+                h('span', {
+                    style: {
+                        'margin-left': '10px',
+                        'color': '#909399',
+                        'font-size': '13px'
+                    }
+                }, this.formatDate(knowledge.created_at))
+            ]);
+                    
+            // 使用 ElementPlus 的 Dialog 组件
             ElementPlus.ElMessageBox.alert(
-                h('div', [
-                    h('div', { style: 'margin-bottom: 20px;' }, [
-                        h('el-tag', { type: this.getSourceTypeTag(knowledge.source_type) }, 
-                            this.getSourceTypeText(knowledge.source_type)),
-                        h('span', { style: 'margin-left: 10px; color: "#909399";' }, 
-                            this.formatDate(knowledge.created_at))
-                    ]),
-                    h('div', { style: 'white-space: pre-wrap; line-height: 1.8; max-height: 60vh; overflow-y: auto;' }, 
-                        knowledge.content)
-                ]),
+                h('div', [headerVNode, contentVNode]),
                 knowledge.title,
                 {
-                    dangerouslyUseHTMLString: true,
+                    dangerouslyUseHTMLString: true,  // 启用 HTML 渲染
                     confirmButtonText: '关闭',
                     width: '80%',
                     customStyle: {
