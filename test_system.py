@@ -43,7 +43,7 @@ def test_config():
     print("=" * 50)
     
     try:
-        from config import settings
+        from app.config import settings
         
         print(f"✓ 应用名称：{settings.app_name}")
         print(f"✓ 数据库 URL: {settings.database_url}")
@@ -69,7 +69,7 @@ def test_database():
     print("=" * 50)
     
     try:
-        from models import init_db, engine, Base
+        from app.models import init_db, engine, Base
         from sqlalchemy import inspect
         
         # 创建表
@@ -95,7 +95,7 @@ def test_crud():
     print("=" * 50)
     
     try:
-        from database import get_db, SessionLocal
+        from app.database import get_db, SessionLocal
         import crud
         import schemas
         
@@ -156,7 +156,7 @@ async def test_crawler():
     print("=" * 50)
     
     try:
-        from crawler import WebScraper
+        from app.crawler import WebScraper
         
         scraper = WebScraper()
         
@@ -187,7 +187,7 @@ def test_ai_processor():
     print("=" * 50)
     
     try:
-        from ai_processor import AIProcessor
+        from app.ai_processor import AIProcessor
         
         processor = AIProcessor()
         

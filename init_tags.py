@@ -4,7 +4,7 @@
 @author LiuHuiYu
 """
 from sqlalchemy.orm import Session
-from models import Tag, engine, SessionLocal
+from app.models import Tag, engine, SessionLocal
 
 def init_tags():
     """初始化一些常用标签"""

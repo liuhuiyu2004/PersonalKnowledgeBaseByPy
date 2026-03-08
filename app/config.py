@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     port: int = 8000
     
     # 数据库配置
-    database_url: str = "sqlite:///./knowledge_base.db"
+    # 将数据库文件存放在 data/ 目录中
+    database_url: str = "sqlite:///./data/knowledge_base.db"
     
     # AI 配置 (可选)
     openai_api_key: Optional[str] = None

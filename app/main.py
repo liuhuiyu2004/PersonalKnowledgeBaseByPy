@@ -10,9 +10,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
 
-from config import settings
-from models import init_db
-from api.routes import knowledge, tags, search, web, ai, stats
+from app.config import settings
+from app.models import init_db
+from app.api.routes import knowledge, tags, search, web, ai, stats
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -42,7 +42,8 @@ async def startup_event():
 
 
 # 挂载静态文件目录 (用于前端页面)
-static_path = os.path.join(os.path.dirname(__file__), "static")
+# 注意：__file__ 现在指向 app/main.py，需要向上一级目录找到 static
+static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 

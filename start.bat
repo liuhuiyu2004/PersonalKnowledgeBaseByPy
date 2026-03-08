@@ -18,6 +18,7 @@ echo.
 echo 按 Ctrl+C 停止服务
 echo.
 
-python main.py
+REM 从 app 目录启动
+python app\main.py
 
 pause
