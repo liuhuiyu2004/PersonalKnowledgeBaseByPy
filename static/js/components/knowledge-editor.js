@@ -13,12 +13,18 @@ const KnowledgeEditor = {
                 </el-form-item>
                 
                 <el-form-item label="内容" prop="content">
-                    <el-input 
-                        v-model="form.content" 
-                        type="textarea" 
-                        :rows="15" 
-                        placeholder="请输入内容"
-                    ></el-input>
+                    <div ref="editorRef" style="border: 1px solid #dcdfe6; z-index: 100;">
+                        <toolbar
+                            style="border-bottom: 1px solid #dcdfe6"
+                            :editor="editor"
+                            :defaultConfig="toolbarConfig"
+                        ></toolbar>
+                        <editor
+                            style="height: 400px; overflow-y: hidden;"
+                            v-model="form.content"
+                            :defaultConfig="editorConfig"
+                        ></editor>
+                    </div>
                 </el-form-item>
                 
                 <el-form-item label="来源 URL" prop="source_url">
@@ -91,7 +97,20 @@ const KnowledgeEditor = {
             allTags: [],
             saving: false,
             summarizing: false,
-            isEdit: false
+            isEdit: false,
+            // 富文本编辑器
+            editor: null,
+            editorRef: null,
+            toolbarConfig: {},
+            editorConfig: { 
+                placeholder: '请输入内容，支持富文本格式（加粗、斜体、链接、列表等）...',
+                MENU_CONF: {
+                    uploadImage: {
+                        maxFileSize: 10 * 1024 * 1024, // 10MB
+                        allowedFileTypes: ['image/*']
+                    }
+                }
+            }
         }
     },
     
@@ -116,7 +135,43 @@ const KnowledgeEditor = {
         }
     },
     
+    mounted() {
+        // 初始化富文本编辑器
+        this.$nextTick(() => {
+            this.initEditor();
+        });
+    },
+    
+    beforeUnmount() {
+        // 销毁编辑器实例
+        if (this.editor) {
+            this.editor.destroy();
+        }
+    },
+    
     methods: {
+        initEditor() {
+            // 创建编辑器
+            const { createEditor, createToolbar } = window.wangEditor;
+            
+            this.editor = createEditor({
+                selector: this.$refs.editorRef.querySelector('editor'),
+                html: this.form.content,
+                config: this.editorConfig,
+                mode: 'default',
+            })
+            
+            // 创建工具栏
+            const toolbar = createToolbar({
+                editor: this.editor,
+                selector: this.$refs.editorRef.querySelector('toolbar'),
+                config: this.toolbarConfig,
+                mode: 'default',
+            })
+            
+            console.log('富文本编辑器初始化完成');
+        },
+        
         async fetchTags() {
             try {
                 const response = await axios.get('/api/tags/');

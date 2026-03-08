@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 书本图标 -->
+  <g>
+    <!-- 左页 -->
+    <path d="M 50 15 L 20 25 L 20 75 L 50 85 Z" fill="#4A90E2" stroke="#2E5C8A" stroke-width="2"/>
+    <!-- 右页 -->
+    <path d="M 50 15 L 80 25 L 80 75 L 50 85 Z" fill="#5BA3F5" stroke="#2E5C8A" stroke-width="2"/>
+    <!-- 书脊 -->
+    <rect x="48" y="15" width="4" height="70" fill="#3A7BC8"/>
+    <!-- 高光 -->
+    <path d="M 25 30 L 45 35 L 45 80 L 25 75 Z" fill="#6EB8FF" opacity="0.3"/>
+    <path d="M 55 35 L 75 30 L 75 75 L 55 80 Z" fill="#6EB8FF" opacity="0.3"/>
+  </g>
+</svg>

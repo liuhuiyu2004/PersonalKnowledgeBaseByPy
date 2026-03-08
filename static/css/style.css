@@ -89,6 +89,15 @@ body {
     margin-bottom: 8px;
 }
 
+/* 富文本编辑器样式 */
+.w-e-toolbar {
+    border-bottom: 1px solid #dcdfe6 !important;
+}
+
+.w-e-text-container {
+    min-height: 400px !important;
+}
+
 /* 搜索框样式 */
 .search-box {
     margin-bottom: 20px;

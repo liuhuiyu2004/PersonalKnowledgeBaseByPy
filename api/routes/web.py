@@ -36,7 +36,7 @@ async def fetch_webpage(
         # 获取网页内容
         page_data = await searcher.fetch_and_parse(request.url)
         if not page_data:
-            raise HTTPException(status_code=400, detail="无法获取网页内容，请检查 URL 是否正确或网站是否可访问")
+            raise HTTPException(status_code=400, detail=f"无法获取网页内容，请检查 URL 是否正确或网站是否可访问。URL: {request.url}")
         
         # 生成摘要
         summary = None
@@ -58,6 +58,11 @@ async def fetch_webpage(
     except HTTPException:
         raise
     except Exception as e:
+        # 打印详细错误信息
+        import traceback
+        print(f"网页抓取失败：{request.url}")
+        print(f"错误详情：{str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"抓取失败：{str(e)}")
 
 

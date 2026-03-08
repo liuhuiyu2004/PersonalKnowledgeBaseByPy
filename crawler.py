@@ -46,8 +46,28 @@ class WebScraper:
                 response = await client.get(url)
                 response.raise_for_status()
                 
-                # 检测编码
-                response.encoding = response.apparent_encoding
+                # 检测编码 - httpx 使用 response.encoding
+                # 如果没有设置编码，尝试从 headers 中获取
+                encoding = response.encoding
+                if not encoding:
+                    content_type = response.headers.get('content-type', '')
+                    if 'charset=' in content_type:
+                        encoding = content_type.split('charset=')[-1].strip()
+                    else:
+                        # 默认使用 UTF-8
+                        encoding = 'utf-8'
+                
+                # 设置编码并获取文本
+                response.encoding = encoding
+                
+                # 检查是否被重定向或返回错误页面
+                if response.status_code != 200:
+                    return None, f"HTTP 错误：{response.status_code}"
+                
+                # 检查是否返回了反爬虫页面
+                if 'robot' in response.text.lower() or 'access denied' in response.text.lower():
+                    return None, "网站拒绝了访问（可能触发了反爬虫机制）"
+                
                 return response.text, None
         except httpx.HTTPStatusError as e:
             return None, f"HTTP 错误：{e.response.status_code} - 网站可能拒绝了请求"
@@ -242,12 +262,16 @@ class WebSearcher:
     
     async def fetch_and_parse(self, url: str) -> Optional[Dict[str, str]]:
         """获取并解析网页"""
+        print(f"正在抓取：{url}")
         html, error = await self.scraper.fetch_page(url)
         if error:
-            print(f"Error: {error}")
+            print(f"抓取失败：{error}")
             return None
         
-        return self.scraper.parse_html(html, url)
+        print(f"抓取成功，HTML 长度：{len(html)}")
+        result = self.scraper.parse_html(html, url)
+        print(f"解析成功，标题：{result.get('title', '无标题')}")
+        return result
 
 
 # 便捷函数

@@ -164,7 +164,17 @@ const WebCrawler = {
                     ElementPlus.ElMessage.success('抓取成功');
                 }
             } catch (error) {
-                ElementPlus.ElMessage.error('抓取失败：' + (error.response?.data?.detail || error.message));
+                // 显示详细错误信息
+                let errorMsg = '抓取失败：';
+                if (error.response) {
+                    // 后端返回了错误
+                    errorMsg += error.response.data?.detail || error.response.data?.message || `HTTP ${error.response.status}`;
+                } else if (error.message) {
+                    // 网络错误或其他错误
+                    errorMsg += error.message;
+                }
+                
+                ElementPlus.ElMessage.error(errorMsg);
                 console.error('Fetch error:', error);
             } finally {
                 this.fetching = false;
@@ -204,16 +214,30 @@ const WebCrawler = {
         },
         
         previewSearchResult(result) {
-            ElementPlus.ElDialog({
-                title: result.title,
-                width: '80%',
-                content: () => h('div', [
-                    h('p', { style: 'color: #909399; margin-bottom: 10px;' }, result.url),
-                    h('div', { style: 'white-space: pre-wrap;' }, result.snippet)
+            const { h } = Vue;
+            
+            ElementPlus.ElMessageBox.alert(
+                h('div', [
+                    h('a', {
+                        href: result.url,
+                        target: '_blank',
+                        rel: 'noopener noreferrer',
+                        style: 'color: #409EFF; text-decoration: none; font-size: 14px; display: block; margin-bottom: 10px; word-break: break-all;'
+                    }, result.url),
+                    h('div', {
+                        style: 'white-space: pre-wrap; line-height: 1.6; margin-top: 15px; max-height: 400px; overflow-y: auto;'
+                    }, result.snippet)
                 ]),
-                showConfirmButton: false,
-                closeOnPressEscape: true,
-            });
+                result.title || '搜索结果预览',
+                {
+                    dangerouslyUseHTMLString: true,
+                    confirmButtonText: '关闭',
+                    width: '80%',
+                    customStyle: {
+                        maxWidth: '1200px'
+                    }
+                }
+            );
         }
     }
 };
