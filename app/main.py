@@ -12,7 +12,7 @@ import os
 
 from app.config import settings
 from app.models import init_db
-from app.api.routes import knowledge, tags, search, web, ai, stats
+from app.api.routes import knowledge, tags, search, web, ai, stats, upload
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -55,6 +55,7 @@ app.include_router(search.router, prefix="/api/search", tags=["搜索"])
 app.include_router(web.router, prefix="/api/web", tags=["网络爬虫"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI 处理"])
 app.include_router(stats.router, prefix="/api/stats", tags=["统计信息"])
+app.include_router(upload.router, prefix="/api/upload", tags=["文件上传"])
 
 
 # 根路径 - 返回前端页面

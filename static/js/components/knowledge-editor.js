@@ -13,17 +13,11 @@ const KnowledgeEditor = {
                 </el-form-item>
                 
                 <el-form-item label="内容" prop="content">
-                    <div ref="editorRef" style="border: 1px solid #dcdfe6; z-index: 100;">
-                        <toolbar
-                            style="border-bottom: 1px solid #dcdfe6"
-                            :editor="editor"
-                            :defaultConfig="toolbarConfig"
-                        ></toolbar>
-                        <editor
-                            style="height: 400px; overflow-y: hidden;"
-                            v-model="form.content"
-                            :defaultConfig="editorConfig"
-                        ></editor>
+                    <div ref="editorRef" style="border: 1px solid #dcdfe6;">
+                        <!-- 工具栏容器 -->
+                        <div class="toolbar-container" style="border-bottom: 1px solid #dcdfe6; background-color: #fff;"></div>
+                        <!-- 编辑器容器 -->
+                        <div class="editor-container" style="height: 400px; overflow-y: hidden; background-color: #fff;"></div>
                     </div>
                 </el-form-item>
                 
@@ -107,7 +101,45 @@ const KnowledgeEditor = {
                 MENU_CONF: {
                     uploadImage: {
                         maxFileSize: 10 * 1024 * 1024, // 10MB
-                        allowedFileTypes: ['image/*']
+                        allowedFileTypes: ['image/*'],
+                        // 自定义上传函数
+                        async customUpload(file, insertFn) {
+                            // 检查文件类型
+                            if (!file.type.startsWith('image/')) {
+                                ElementPlus.ElMessage.error('只能上传图片文件');
+                                return;
+                            }
+                            
+                            // 检查文件大小
+                            if (file.size > 10 * 1024 * 1024) {
+                                ElementPlus.ElMessage.error('图片大小不能超过 10MB');
+                                return;
+                            }
+                            
+                            try {
+                                // 创建 FormData
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                
+                                // 发送到后端
+                                const response = await axios.post('/api/upload/image', formData, {
+                                    headers: {
+                                        'Content-Type': 'multipart/form-data'
+                                    }
+                                });
+                                
+                                if (response.data && response.data.url) {
+                                    // 插入图片到编辑器
+                                    insertFn(response.data.url, file.name, response.data.url);
+                                    ElementPlus.ElMessage.success('图片上传成功');
+                                } else {
+                                    ElementPlus.ElMessage.error('图片上传失败');
+                                }
+                            } catch (error) {
+                                console.error('Upload error:', error);
+                                ElementPlus.ElMessage.error('图片上传失败：' + (error.response?.data?.detail || error.message));
+                            }
+                        }
                     }
                 }
             }
@@ -131,15 +163,22 @@ const KnowledgeEditor = {
                 summary: this.editData.summary || '',
                 tag_ids: tagIds
             };
-            console.log('Edit form initialized with tag_ids:', this.form.tag_ids);
+            console.log('Edit form initialized:');
+            console.log('  title:', this.form.title);
+            console.log('  content:', this.form.content);
+            console.log('  content length:', this.form.content ? this.form.content.length : 0);
+            console.log('  tag_ids:', this.form.tag_ids);
+            
+            // 确保在数据加载完成后再初始化编辑器
+            this.$nextTick(() => {
+                this.initEditor();
+            });
+        } else {
+            // 新建模式，直接初始化编辑器
+            this.$nextTick(() => {
+                this.initEditor();
+            });
         }
-    },
-    
-    mounted() {
-        // 初始化富文本编辑器
-        this.$nextTick(() => {
-            this.initEditor();
-        });
     },
     
     beforeUnmount() {
@@ -154,8 +193,24 @@ const KnowledgeEditor = {
             // 创建编辑器
             const { createEditor, createToolbar } = window.wangEditor;
             
+            console.log('Initializing editor...');
+            console.log('Editor ref:', this.$refs.editorRef);
+            
+            // 获取容器元素
+            const toolbarContainer = this.$refs.editorRef.querySelector('.toolbar-container');
+            const editorContainer = this.$refs.editorRef.querySelector('.editor-container');
+            
+            console.log('Toolbar container:', toolbarContainer);
+            console.log('Editor container:', editorContainer);
+            
+            if (!toolbarContainer || !editorContainer) {
+                console.error('Cannot find editor containers!');
+                return;
+            }
+            
+            // 创建编辑器实例
             this.editor = createEditor({
-                selector: this.$refs.editorRef.querySelector('editor'),
+                selector: editorContainer,
                 html: this.form.content,
                 config: this.editorConfig,
                 mode: 'default',
@@ -164,10 +219,24 @@ const KnowledgeEditor = {
             // 创建工具栏
             const toolbar = createToolbar({
                 editor: this.editor,
-                selector: this.$refs.editorRef.querySelector('toolbar'),
+                selector: toolbarContainer,
                 config: this.toolbarConfig,
                 mode: 'default',
             })
+            
+            // 监听内容变化，同步到 form.content
+            // 注意：不要在初始化时立即同步，等待编辑器完全渲染后再同步
+            setTimeout(() => {
+                this.editor.on('change', () => {
+                    const newContent = this.editor.getHtml();
+                    // 只有当内容不为空时才同步，避免初始化时覆盖 form.content
+                    if (newContent && newContent.trim() !== '' && newContent !== '<p><br/></p>') {
+                        this.form.content = newContent;
+                        console.log('Editor content changed, new content:', this.form.content);
+                    }
+                });
+                console.log('Editor change listener registered');
+            }, 500);
             
             console.log('富文本编辑器初始化完成');
         },
@@ -252,6 +321,24 @@ const KnowledgeEditor = {
                 
                 this.saving = true;
                 
+                // 从富文本编辑器获取最新内容
+                if (this.editor) {
+                    const html = this.editor.getHtml();
+                    console.log('Editor getHtml() result:', html);
+                    console.log('Content type:', typeof html);
+                    console.log('Is array?', Array.isArray(html));
+                    
+                    // 如果返回的是数组，转换为字符串
+                    if (Array.isArray(html)) {
+                        this.form.content = html.join('');
+                    } else {
+                        this.form.content = html || '';
+                    }
+                }
+                
+                console.log('Final content before submit:', this.form.content);
+                console.log('Content type:', typeof this.form.content);
+                
                 // 确保 tag_ids 是数字数组 - 过滤掉所有非数字的值
                 let tagIds = [];
                 if (this.form.tag_ids && Array.isArray(this.form.tag_ids)) {
@@ -275,14 +362,19 @@ const KnowledgeEditor = {
                     tag_ids: tagIds
                 };
                 
+                console.log('Submitting data:', JSON.stringify(data, null, 2));
+                
                 if (this.isEdit) {
                     // 更新
+                    console.log('Sending PUT request to:', `/api/knowledge/${this.editData.id}`);
                     await axios.put(`/api/knowledge/${this.editData.id}`, data);
                 } else {
                     // 创建
+                    console.log('Sending POST request to: /api/knowledge/');
                     await axios.post('/api/knowledge/', data);
                 }
                 
+                console.log('Save successful!');
                 ElementPlus.ElMessage.success('保存成功');
                 this.$emit('saved');
             } catch (error) {

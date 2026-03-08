@@ -18,6 +18,16 @@ const app = createApp({
             editData: null,
         }
     },
+    watch: {
+        editData: {
+            handler(newVal) {
+                console.log('editData changed:', newVal);
+                console.log('editData.content:', newVal ? newVal.content : 'null');
+                console.log('editData.content length:', newVal && newVal.content ? newVal.content.length : 0);
+            },
+            deep: true
+        }
+    },
     components: {
         // 注册全局组件
         'knowledge-list': KnowledgeList,
@@ -30,11 +40,20 @@ const app = createApp({
     },
     methods: {
         // 编辑知识
-        editKnowledge(knowledge) {
+        async editKnowledge(knowledge) {
             console.log('Edit knowledge:', knowledge);
             console.log('Knowledge tags:', knowledge.tags);
-            this.editData = knowledge;
-            this.currentView = 'create';
+            
+            // 通过 ID 获取完整的知识详情
+            try {
+                const response = await axios.get(`/api/knowledge/${knowledge.id}`);
+                console.log('Full knowledge data:', response.data);
+                this.editData = response.data;
+                this.currentView = 'create';
+            } catch (error) {
+                console.error('Load knowledge for edit error:', error);
+                ElementPlus.ElMessage.error('加载知识详情失败');
+            }
         },
         
         // 删除知识
