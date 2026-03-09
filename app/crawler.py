@@ -28,6 +28,14 @@ class WebScraper:
             'Sec-Ch-Ua-Platform': '"Windows"',
         }
         self.timeout = settings.search_timeout
+        
+        # 使用 httpx 的客户端配置，增强反反爬
+        self.client_kwargs = {
+            'headers': self.headers,
+            'timeout': httpx.Timeout(30.0, connect=10.0),  # 增加超时时间
+            'follow_redirects': True,
+            'verify': False,  # 禁用 SSL 验证（某些网站 SSL 证书有问题）
+        }
     
     async def fetch_page(self, url: str) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -37,27 +45,26 @@ class WebScraper:
             Tuple[html, error]: (HTML 内容，错误信息)
         """
         try:
+            # 使用更真实的浏览器特征
             async with httpx.AsyncClient(
-                headers=self.headers, 
-                timeout=self.timeout,
-                follow_redirects=True,
-                cookies={}
+                **self.client_kwargs,
+                cookies={
+                    'accept_cookies': 'true'
+                },
+                http2=True,  # 启用 HTTP/2
             ) as client:
                 response = await client.get(url)
                 response.raise_for_status()
                 
-                # 检测编码 - httpx 使用 response.encoding
-                # 如果没有设置编码，尝试从 headers 中获取
+                # 检测编码
                 encoding = response.encoding
                 if not encoding:
                     content_type = response.headers.get('content-type', '')
                     if 'charset=' in content_type:
                         encoding = content_type.split('charset=')[-1].strip()
                     else:
-                        # 默认使用 UTF-8
                         encoding = 'utf-8'
                 
-                # 设置编码并获取文本
                 response.encoding = encoding
                 
                 # 检查是否被重定向或返回错误页面
@@ -164,6 +171,43 @@ class WebSearcher:
         self.headers = {
             'User-Agent': settings.user_agent,
         }
+    
+    async def fetch_and_parse(self, url: str) -> Optional[Dict[str, str]]:
+        """
+        获取并解析网页内容（增强版）
+        使用多层降级策略：
+        1. 直接爬取
+        2. 使用移动端 UA 爬取
+        3. 使用搜索引擎缓存
+        """
+        # 策略 1: 正常爬取
+        print(f"[策略 1] 尝试直接爬取：{url}")
+        html, error = await self.scraper.fetch_page(url)
+        if html:
+            print(f"[策略 1] 成功")
+            return self.scraper.parse_html(html, url)
+        
+        print(f"[策略 1] 失败：{error}")
+        
+        # 策略 2: 使用移动端 UA 爬取（某些网站对移动端更友好）
+        print(f"[策略 2] 尝试移动端 UA 爬取...")
+        mobile_scraper = WebScraper()
+        mobile_scraper.headers['User-Agent'] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+        
+        html, error = await mobile_scraper.fetch_page(url)
+        if html:
+            print(f"[策略 2] 成功（移动端 UA）")
+            return mobile_scraper.parse_html(html, url)
+        
+        print(f"[策略 2] 失败：{error}")
+        
+        # 策略 3: 尝试从搜索引擎获取缓存（如果有实现）
+        print(f"[策略 3] 尝试搜索引擎缓存...")
+        # TODO: 可以实现 Google Cache 或 Bing Cache
+        
+        # 所有策略都失败
+        print(f"[所有策略失败] 无法获取：{url}")
+        return None
     
     async def search_duckduckgo(self, query: str, num_results: int = 5) -> List[Dict[str, str]]:
         """

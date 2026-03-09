@@ -90,6 +90,23 @@ class WebFetchRequest(BaseModel):
     generate_summary: Optional[bool] = Field(default=True, description="是否生成 AI 摘要")
 
 
+class WebPreviewRequest(BaseModel):
+    """网页预览分析请求模型"""
+    url: str = Field(..., description="要分析的网页 URL")
+
+
+class WebPreviewResponse(BaseModel):
+    """网页预览分析响应模型"""
+    title: str
+    content: str
+    html_content: Optional[str] = None  # 富文本内容
+    summary: str
+    suggested_tags: list[str] = []  # agent 建议的标签
+    category: Optional[str] = None  # 分类建议
+    url: str
+    source_type: str = 'web'
+
+
 class WebSearchRequest(BaseModel):
     """网络搜索请求模型"""
     query: str = Field(..., min_length=1, max_length=500, description="搜索关键词")

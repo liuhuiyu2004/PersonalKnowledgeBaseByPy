@@ -10,7 +10,7 @@ from typing import List
 
 import crud
 import schemas
-from ai_processor import AIProcessor
+from agent import AIProcessor
 from database import get_db
 
 router = APIRouter()

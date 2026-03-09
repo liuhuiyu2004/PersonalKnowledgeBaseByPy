@@ -15,7 +15,11 @@ const WebCrawler = {
                                     v-model="fetchForm.url" 
                                     placeholder="请输入要抓取的网页 URL"
                                     clearable
-                                ></el-input>
+                                >
+                                    <template #append>
+                                        <el-button @click="previewUrl">🔍 导入预览</el-button>
+                                    </template>
+                                </el-input>
                             </el-form-item>
                             
                             <el-form-item label="选项">
@@ -74,6 +78,47 @@ const WebCrawler = {
                 </el-tabs>
             </el-card>
             
+            <!-- 导入预览对话框 -->
+            <el-dialog v-model="previewDialogVisible" title="📋 网页预览与分析" width="80%" top="5vh">
+                <el-descriptions :column="2" border v-loading="previewLoading">
+                    <el-descriptions-item label="标题">{{ previewData.title }}</el-descriptions-item>
+                    <el-descriptions-item label="URL">{{ previewData.url }}</el-descriptions-item>
+                    <el-descriptions-item label="AI 摘要" :span="2">
+                        <el-tag type="success" effect="plain">✨ Agent 生成</el-tag>
+                        <div style="margin-top: 8px;">{{ previewData.summary }}</div>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="建议标签" :span="2">
+                        <el-tag v-for="tag in previewData.suggested_tags" :key="tag" style="margin-right: 5px;">
+                            🏷️ {{ tag }}
+                        </el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="推荐分类" :span="2">
+                        <el-tag type="warning" effect="plain" v-if="previewData.category">
+                            📁 {{ previewData.category }}
+                        </el-tag>
+                        <span v-else style="color: #999;">暂无匹配分类</span>
+                    </el-descriptions-item>
+                </el-descriptions>
+                
+                <el-divider />
+                
+                <div style="margin-top: 15px;">
+                    <h4>📄 内容预览（富文本）</h4>
+                    <div class="content-preview" style="max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 15px; background: #fafafa;">
+                        <div v-html="previewData.html_content || previewData.content"></div>
+                    </div>
+                </div>
+                
+                <template #footer>
+                    <span class="dialog-footer">
+                        <el-button @click="previewDialogVisible = false">取消</el-button>
+                        <el-button type="primary" @click="savePreview" :loading="saving">
+                            💾 保存到知识库
+                        </el-button>
+                    </span>
+                </template>
+            </el-dialog>
+            
             <!-- 抓取结果预览 -->
             <el-card v-if="fetchResult" style="margin-top: 20px;">
                 <template #header>
@@ -104,7 +149,7 @@ const WebCrawler = {
                     <el-table-column prop="url" label="URL" show-overflow-tooltip width="300" />
                     <el-table-column label="操作" width="150">
                         <template #default="scope">
-                            <el-button size="small" @click="previewSearchResult(scope.row)">预览</el-button>
+                            <el-button size="small" @click="previewSearchResultWithAgent(scope.row)">🔍 导入预览</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -122,7 +167,7 @@ const WebCrawler = {
             },
             searchForm: {
                 query: '',
-                engine: 'duckduckgo', // 默认使用 DuckDuckGo
+                engine: 'bing', // 默认使用 Bing
                 num_results: 5,
                 auto_save: false
             },
@@ -141,7 +186,20 @@ const WebCrawler = {
             fetching: false,
             searching: false,
             fetchResult: null,
-            searchResults: null
+            searchResults: null,
+            // 新增：预览对话框相关
+            previewDialogVisible: false,
+            previewLoading: false,
+            saving: false,
+            previewData: {
+                title: '',
+                url: '',
+                content: '',
+                html_content: '',
+                summary: '',
+                suggested_tags: [],
+                category: null
+            }
         }
     },
     
@@ -238,7 +296,174 @@ const WebCrawler = {
                     }
                 }
             );
-        }
+        },
+        
+        // 新增：使用 agent 分析搜索结果
+        async previewSearchResultWithAgent(result) {
+            console.log('[PreviewSearchResultWithAgent] 开始分析:', result);
+            
+            // 重置预览数据
+            this.previewData = {
+                title: '',
+                url: '',
+                content: '',
+                html_content: '',
+                summary: '',
+                suggested_tags: [],
+                category: null
+            };
+            
+            if (!result.url) {
+                ElementPlus.ElMessage.warning('该结果没有 URL，无法分析');
+                // 降级显示基本信息
+                this.previewData = {
+                    title: result.title || '搜索结果',
+                    url: result.url || '',
+                    content: result.snippet || '',
+                    html_content: result.snippet || '',
+                    summary: result.snippet || '',
+                    suggested_tags: [],
+                    category: null
+                };
+                this.previewDialogVisible = true;
+                return;
+            }
+            
+            this.previewLoading = true;
+            this.previewDialogVisible = true;
+            
+            try {
+                console.log('[PreviewSearchResultWithAgent] 开始分析 URL:', result.url);
+                const response = await axios.post('/api/web/preview', {
+                    url: result.url
+                });
+                
+                console.log('[PreviewSearchResultWithAgent] 分析结果:', response.data);
+                this.previewData = response.data;
+                
+                ElementPlus.ElMessage.success('分析完成');
+            } catch (error) {
+                console.error('[PreviewSearchResultWithAgent] 分析失败:', error);
+                let errorMsg = '分析失败：';
+                if (error.response) {
+                    errorMsg += error.response.data?.detail || error.response.data?.message || `HTTP ${error.response.status}`;
+                } else if (error.message) {
+                    errorMsg += error.message;
+                }
+                
+                ElementPlus.ElMessage.error(errorMsg);
+                
+                // 降级显示基本信息
+                this.previewData = {
+                    title: result.title || '搜索结果',
+                    url: result.url || '',
+                    content: result.snippet || '',
+                    html_content: result.snippet || '',
+                    summary: result.snippet || '',
+                    suggested_tags: [],
+                    category: null
+                };
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+        
+        // 新增：预览 URL
+        async previewUrl() {
+            if (!this.fetchForm.url) {
+                ElementPlus.ElMessage.warning('请输入 URL');
+                return;
+            }
+            
+            // 重置预览数据
+            this.previewData = {
+                title: '',
+                url: '',
+                content: '',
+                html_content: '',
+                summary: '',
+                suggested_tags: [],
+                category: null
+            };
+            
+            this.previewLoading = true;
+            this.previewDialogVisible = true;
+            
+            try {
+                const response = await axios.post('/api/web/preview', {
+                    url: this.fetchForm.url
+                });
+                
+                this.previewData = response.data;
+                
+                ElementPlus.ElMessage.success('分析完成');
+            } catch (error) {
+                let errorMsg = '分析失败：';
+                if (error.response) {
+                    errorMsg += error.response.data?.detail || error.response.data?.message || `HTTP ${error.response.status}`;
+                } else if (error.message) {
+                    errorMsg += error.message;
+                }
+                
+                ElementPlus.ElMessage.error(errorMsg);
+                console.error('Preview error:', error);
+                this.previewDialogVisible = false;
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+        
+        // 新增：保存预览结果
+        async savePreview() {
+            if (!this.previewData.url) {
+                ElementPlus.ElMessage.warning('没有可保存的内容');
+                return;
+            }
+            
+            this.saving = true;
+            
+            try {
+                // 构建保存数据
+                const saveData = {
+                    title: this.previewData.title,
+                    content: this.previewData.html_content || this.previewData.content,
+                    summary: this.previewData.summary,
+                    source_type: 'web',
+                    source_url: this.previewData.url,
+                    tag_ids: []  // TODO: 可以根据 suggested_tags 和 category 自动匹配标签
+                };
+                
+                const response = await axios.post('/api/knowledge/', saveData);
+                
+                ElementPlus.ElMessage.success('保存成功');
+                this.previewDialogVisible = false;
+                this.$emit('saved');
+                
+                // 清空预览数据
+                this.previewData = {
+                    title: '',
+                    url: '',
+                    content: '',
+                    html_content: '',
+                    summary: '',
+                    suggested_tags: [],
+                    category: null
+                };
+            } catch (error) {
+                let errorMsg = '保存失败：';
+                if (error.response) {
+                    errorMsg += error.response.data?.detail || error.response.data?.message;
+                } else if (error.message) {
+                    errorMsg += error.message;
+                }
+                
+                ElementPlus.ElMessage.error(errorMsg);
+                console.error('Save error:', error);
+            } finally {
+                this.saving = false;
+            }
+        },
+
     }
 };
 

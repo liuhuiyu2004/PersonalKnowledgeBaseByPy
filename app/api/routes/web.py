@@ -12,7 +12,7 @@ import asyncio
 import crud
 import schemas
 from crawler import WebSearcher
-from ai_processor import AIProcessor
+from agent import AIProcessor
 from database import get_db
 
 router = APIRouter()
@@ -115,6 +115,150 @@ async def search_web(
                 continue
     
     return results
+
+
+@router.post("/preview", response_model=schemas.WebPreviewResponse, summary="预览并分析网页")
+async def preview_webpage(
+    request: schemas.WebPreviewRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    抓取网页内容并使用 agent 进行分析
+    - 提取富文本内容
+    - 生成摘要
+    - 提取建议标签
+    - 根据已有标签进行分类
+    
+    降级策略：
+    1. 优先使用爬虫获取完整内容
+    2. 如果失败，使用搜索引擎的摘要信息
+    3. 最后返回基本信息
+    """
+    searcher = WebSearcher()
+    ai = AIProcessor()
+    
+    try:
+        print(f"[Preview] 开始分析 URL: {request.url}")
+        
+        # 策略 1: 尝试爬取网页
+        page_data = await searcher.fetch_and_parse(request.url)
+        print(f"[Preview] 网页抓取结果：{page_data is not None}")
+        
+        if page_data:
+            # 爬取成功，使用完整功能
+            title = page_data.get('title', '无标题')
+            content = page_data.get('content', page_data.get('text', ''))
+            html_content = page_data.get('html', '')
+            
+            print(f"[Preview] 网页标题：{title}")
+            print(f"[Preview] 内容长度：{len(content)}")
+            
+            # 使用 agent 生成摘要
+            print(f"[Preview] 开始生成摘要...")
+            summary = await ai.summarize(content, max_length=300)
+            print(f"[Preview] 摘要生成完成：{summary is not None}")
+            
+            # 使用 agent 提取关键词标签
+            print(f"[Preview] 开始提取标签...")
+            suggested_tags = await ai.extract_tags(content, max_tags=5)
+            print(f"[Preview] 标签提取完成：{suggested_tags}")
+            
+            # 从数据库获取已有标签，进行分类
+            from crud import get_all_tags
+            existing_tags = get_all_tags(db)
+            tag_names = [tag.name for tag in existing_tags]
+            print(f"[Preview] 已有标签：{tag_names}")
+            
+            category = None
+            if tag_names:
+                print(f"[Preview] 开始分类...")
+                category = await ai.categorize(content, categories=tag_names)
+                print(f"[Preview] 分类结果：{category}")
+            
+            result = schemas.WebPreviewResponse(
+                title=title,
+                content=content,
+                html_content=html_content if html_content else content,
+                summary=summary or '',
+                suggested_tags=suggested_tags,
+                category=category,
+                url=request.url,
+                source_type='web'
+            )
+            
+            print(f"[Preview] 返回结果：成功（完整模式）")
+            return result
+        
+        # 策略 2: 爬取失败，使用搜索引擎获取基本信息
+        print(f"[Preview] 爬取失败，尝试使用搜索引擎...")
+        try:
+            from crawler import WebSearcher as Searcher
+            search_engine = Searcher()
+            # 从 URL 提取域名作为搜索关键词
+            from urllib.parse import urlparse
+            parsed = urlparse(request.url)
+            search_query = f"{parsed.path.replace('/', ' ').strip()}"
+            
+            if not search_query:
+                search_query = parsed.netloc
+            
+            # 搜索相关信息
+            search_results = await search_engine.search_duckduckgo(search_query, num_results=3)
+            
+            if search_results:
+                # 找到第一个匹配的 URL
+                for result in search_results:
+                    if request.url in result.get('url', '') or result.get('url', '') in request.url:
+                        print(f"[Preview] 找到匹配结果：{result['title']}")
+                        
+                        # 使用摘要信息
+                        content = result.get('snippet', '')
+                        summary = await ai.summarize(content, max_length=200) if content else '无摘要'
+                        suggested_tags = await ai.extract_tags(content, max_tags=3) if content else []
+                        
+                        return schemas.WebPreviewResponse(
+                            title=result.get('title', '无标题'),
+                            content=content,
+                            html_content=f"<p>来自搜索引擎的摘要：</p><blockquote>{content}</blockquote><p>完整内容：<a href='{request.url}' target='_blank'>{request.url}</a></p>",
+                            summary=summary or '无摘要',
+                            suggested_tags=suggested_tags,
+                            category=None,
+                            url=request.url,
+                            source_type='web'
+                        )
+        except Exception as search_error:
+            print(f"[Preview] 搜索引擎也失败了：{search_error}")
+        
+        # 策略 3: 所有方法都失败，返回基本信息
+        print(f"[Preview] 所有方法失败，返回降级信息")
+        return schemas.WebPreviewResponse(
+            title=f"无法访问的网页",
+            content=f"无法获取网页内容，可能是由于：\n1. 网站有反爬虫机制（如知乎、微信等）\n2. URL 不正确\n3. 网络连接问题\n\n建议：\n- 尝试其他网站（如博客园、CSDN、简书等）\n- 手动复制网页内容到新建知识中\n- 访问：<a href='{request.url}' target='_blank'>{request.url}</a>",
+            html_content=f"<p>无法获取网页内容，请手动访问：<a href='{request.url}' target='_blank'>{request.url}</a></p>",
+            summary='无法生成摘要（网页无法访问）',
+            suggested_tags=[],
+            category=None,
+            url=request.url,
+            source_type='web'
+        )
+        
+    except Exception as e:
+        import traceback
+        error_detail = f"网页预览分析失败：{request.url}"
+        print(error_detail)
+        print(f"错误详情：{str(e)}")
+        print(traceback.format_exc())
+        # 即使是异常也返回降级方案
+        return schemas.WebPreviewResponse(
+            title=f"分析失败",
+            content=f"分析过程中出错：{str(e)}\n\n建议尝试其他网页。",
+            html_content=f"<p>分析失败，请手动访问：<a href='{request.url}' target='_blank'>{request.url}</a></p>",
+            summary='无法生成摘要',
+            suggested_tags=[],
+            category=None,
+            url=request.url,
+            source_type='web'
+        )
 
 
 @router.get("/test/{url:path}", summary="测试网页抓取")
