@@ -210,6 +210,13 @@ const app = createApp({
         cancelEdit() {
             this.editData = null;
             this.currentView = 'list';
+        },
+        
+        // 新建知识
+        createNewKnowledge() {
+            console.log('Creating new knowledge, clearing editData');
+            this.editData = null;
+            this.currentView = 'create';
         }
     }
 });

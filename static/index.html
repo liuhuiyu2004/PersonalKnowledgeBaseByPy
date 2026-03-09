@@ -28,7 +28,7 @@
                 <h1>📚 个人知识库</h1>
                 <el-menu mode="horizontal" :ellipsis="false" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
                     <el-menu-item index="1" @click="currentView = 'list'">知识列表</el-menu-item>
-                    <el-menu-item index="2" @click="currentView = 'create'">新建知识</el-menu-item>
+                    <el-menu-item index="2" @click="createNewKnowledge">新建知识</el-menu-item>
                     <el-menu-item index="3" @click="currentView = 'search'">搜索</el-menu-item>
                     <el-menu-item index="4" @click="currentView = 'web'">网络采集</el-menu-item>
                     <el-menu-item index="5" @click="currentView = 'tags'">标签管理</el-menu-item>

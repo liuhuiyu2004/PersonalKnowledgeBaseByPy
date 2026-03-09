@@ -150,34 +150,18 @@ const KnowledgeEditor = {
         console.log('Editor created, editData:', this.editData);
         await this.fetchTags();
         console.log('Tags loaded:', this.allTags);
-        if (this.editData) {
-            this.isEdit = true;
-            const tagIds = this.editData.tags ? this.editData.tags.map(t => {
-                console.log('Tag object:', t);
-                return t.id;
-            }) : [];
-            this.form = {
-                title: this.editData.title || '',
-                content: this.editData.content || '',
-                source_url: this.editData.source_url || '',
-                summary: this.editData.summary || '',
-                tag_ids: tagIds
-            };
-            console.log('Edit form initialized:');
-            console.log('  title:', this.form.title);
-            console.log('  content:', this.form.content);
-            console.log('  content length:', this.form.content ? this.form.content.length : 0);
-            console.log('  tag_ids:', this.form.tag_ids);
-            
-            // 确保在数据加载完成后再初始化编辑器
-            this.$nextTick(() => {
-                this.initEditor();
-            });
-        } else {
-            // 新建模式，直接初始化编辑器
-            this.$nextTick(() => {
-                this.initEditor();
-            });
+        this.initForm();
+    },
+    
+    watch: {
+        // 监听 editData 变化，处理组件复用场景
+        editData: {
+            handler(newVal) {
+                console.log('editData changed:', newVal);
+                this.initForm();
+            },
+            immediate: false,
+            deep: true
         }
     },
     
@@ -189,6 +173,62 @@ const KnowledgeEditor = {
     },
     
     methods: {
+        // 初始化表单
+        initForm() {
+            console.log('Initializing form, isEdit:', !!this.editData);
+            
+            // 先销毁旧的编辑器实例
+            if (this.editor) {
+                console.log('Destroying old editor instance...');
+                this.editor.destroy();
+                this.editor = null;
+            }
+            
+            if (this.editData) {
+                this.isEdit = true;
+                const tagIds = this.editData.tags ? this.editData.tags.map(t => {
+                    console.log('Tag object:', t);
+                    return t.id;
+                }) : [];
+                this.form = {
+                    title: this.editData.title || '',
+                    content: this.editData.content || '',
+                    source_url: this.editData.source_url || '',
+                    summary: this.editData.summary || '',
+                    tag_ids: tagIds
+                };
+                console.log('Edit form initialized:');
+                console.log('  title:', this.form.title);
+                console.log('  content:', this.form.content);
+                console.log('  content length:', this.form.content ? this.form.content.length : 0);
+                console.log('  tag_ids:', this.form.tag_ids);
+                
+                // 确保在数据加载完成后再初始化编辑器
+                this.$nextTick(() => {
+                    this.initEditor();
+                });
+            } else {
+                // 新建模式，重置表单
+                this.isEdit = false;
+                this.form = {
+                    title: '',
+                    content: '',
+                    source_url: '',
+                    summary: '',
+                    tag_ids: []
+                };
+                console.log('New form initialized (cleared)');
+                
+                // 重置编辑器内容
+                this.$nextTick(() => {
+                    this.initEditor();
+                    if (this.editor) {
+                        this.editor.setHtml('');
+                    }
+                });
+            }
+        },
+        
         initEditor() {
             // 创建编辑器
             const { createEditor, createToolbar } = window.wangEditor;
@@ -211,7 +251,7 @@ const KnowledgeEditor = {
             // 创建编辑器实例
             this.editor = createEditor({
                 selector: editorContainer,
-                html: this.form.content,
+                html: this.form.content,  // 使用 form.content 初始化
                 config: this.editorConfig,
                 mode: 'default',
             })
@@ -404,6 +444,8 @@ const KnowledgeEditor = {
         },
         
         cancel() {
+            // 重置表单
+            this.initForm();
             this.$emit('cancel');
         }
     }
